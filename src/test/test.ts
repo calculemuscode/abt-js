@@ -11,8 +11,15 @@ use(chaiImmutable);
 // zero()
 const zero = abt.oper("zero");
 
-// succ(succ(succ(succ(zero))))
+// succ(succ(succ(succ(zero()))))
 const four = abt.oper("succ", abt.oper("succ", abt.oper("succ", abt.oper("succ", zero))));
+const five = abt.oper("succ", four);
+
+// succ(succ(succ(zero()),succ(zero())));
+const exoticfour = abt.oper("succ", abt.oper("succ", abt.oper("succ", zero), abt.oper("succ", zero)));
+const exoticfive1 = abt.oper("succ", four, zero);
+const exoticfive2 = abt.oper("succ", zero, four);
+const exoticfive3 = abt.oper("succ", four, four);
 
 // node(node(leaf(),x),node(y,x))
 const tree1 = abt.oper("node", abt.oper("node", abt.oper("leaf"), "x"), abt.oper("node", "y", "x"));
@@ -63,11 +70,70 @@ const s2 = abt.oper("lam", [
     ])
 ]);
 
+// lam(x.lam(y.x))
+const k = abt.oper("lam", [["x"], abt.oper("lam", [["y"], "x"])]);
+
+// lam(x.lam(y.y))
+const ign = abt.oper("lam", [["x"], abt.oper("lam", [["y"], "y"])]);
+
 // lam(x.lam(x.x))
 const ign1 = abt.oper("lam", [["x"], abt.oper("lam", [["x"], "x"])]);
 
 // lam(lam.lam(lam.lam))
 const ign2 = abt.oper("lam", [["lam"], abt.oper("lam", [["lam"], "lam"])]);
+
+describe("abt.equal", () => {
+    it("Should recognize only equal variables as distinct", () => {
+        expect(abt.equal(Set(["x", "y"]), "x", "y")).to.be.false;
+        expect(abt.equal(Set(["x", "y"]), "y", "x")).to.be.false;
+        expect(abt.equal(Set(["x"]), "x", "x")).to.be.true;
+        expect(abt.equal(Set(["y"]), "y", "y")).to.be.true;
+        expect(abt.equal(Set(["x", "y"]), "x", "x")).to.be.true;
+    });
+
+    it("Should differentiate variables and constructors", () => {
+        expect(abt.equal(Set(["zero"]), "zero", zero)).to.be.false;
+        expect(abt.equal(Set(["zero"]), zero, "zero")).to.be.false;
+        expect(abt.equal(Set(["zero"]), "zero", four)).to.be.false;
+        expect(abt.equal(Set(["zero"]), four, "zero")).to.be.false;
+    });
+
+    it("Should differentiate constructors of different arities", () => {
+        expect(abt.equal(Set([]), four, exoticfour), "1").to.be.false;
+        expect(abt.equal(Set([]), five, exoticfive1), "2").to.be.false;
+        expect(abt.equal(Set([]), five, exoticfive2), "3").to.be.false;
+        expect(abt.equal(Set([]), five, exoticfive3), "4").to.be.false;
+        expect(abt.equal(Set([]), exoticfive1, exoticfive1), "5").to.be.true;
+        expect(abt.equal(Set([]), exoticfive1, exoticfive2), "6").to.be.false;
+        expect(abt.equal(Set([]), exoticfive1, exoticfive3), "7").to.be.false;
+        expect(abt.equal(Set([]), exoticfive2, exoticfive1), "8").to.be.false;
+        expect(abt.equal(Set([]), exoticfive2, exoticfive2), "9").to.be.true;
+        expect(abt.equal(Set([]), exoticfive2, exoticfive3), "A").to.be.false;
+        expect(abt.equal(Set([]), exoticfive3, exoticfive1), "B").to.be.false;
+        expect(abt.equal(Set([]), exoticfive3, exoticfive2), "C").to.be.false;
+        expect(abt.equal(Set([]), exoticfive3, exoticfive3), "D").to.be.true;
+    });
+
+    it("Should respect alpha-equivalence", () => {
+        expect(abt.equal(Set([]), id1, id1), "1").to.be.true;
+        expect(abt.equal(Set([]), id1, id2), "2").to.be.true;
+        expect(abt.equal(Set([]), id1, id3), "3").to.be.true;
+        expect(abt.equal(Set([]), id1, id4), "4").to.be.true;
+        expect(abt.equal(Set([]), id2, id4), "5").to.be.true;
+        expect(abt.equal(Set([]), id3, id4), "6").to.be.true;
+        expect(abt.equal(Set([]), id4, id4), "7").to.be.true;
+        expect(abt.equal(Set([]), s1, s2), "8").to.be.true;
+        expect(abt.equal(Set([]), ign1, ign2), "9").to.be.true;
+    });
+
+    it("Should differentiate binding structures", () => {
+        expect(abt.equal(Set([]), k, ign), "1").to.be.false;
+        expect(abt.equal(Set(["x", "x1", "y", "y1"]), ign, k), "2").to.be.false;
+        expect(abt.equal(Set(["y"]), id1, take), "3").to.be.false;
+        expect(abt.equal(Set(["y"]), id2, take), "4").to.be.false;
+        expect(abt.equal(Set(["y"]), take, id2), "5").to.be.false;
+    });
+});
 
 describe("abt.freevars", () => {
     it("Should handle binding-free closed expressions", () => {
