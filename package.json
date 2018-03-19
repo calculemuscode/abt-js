@@ -1,25 +1,32 @@
 {
-  "name": "@calculemus/abt",
-  "version": "0.0.1",
-  "description": "Abstract Binding Trees",
-  "main": "lib/index.js",
-  "scripts": {
-    "watch": "tsc -w",
-    "prettier": "prettier --write src/**/*.ts *.json",
-    "prepare": "tsc"
-  },
-  "author": "Calculemus LLC",
-  "license": "ISC",
-  "dependencies": {
-    "immutable": "^3.8.2"
-  },
-  "devDependencies": {
-    "prettier": "^1.11.1",
-    "typescript": "^2.7.2"
-  },
-  "repository": "https://github.com/calculemuscode/abt-js",
-  "prettier": {
-    "printWidth": 110,
-    "tabWidth": 2
-  }
+    "name": "@calculemus/abt",
+    "version": "0.0.1",
+    "description": "Abstract Binding Trees",
+    "main": "lib/index.js",
+    "scripts": {
+        "watch": "tsc -w",
+        "prettier": "prettier --write src/**/*.ts *.json",
+        "prepublishOnly": "tsc",
+        "test": "mocha -r ts-node/register src/**/test/*.ts"
+    },
+    "author": "Calculemus LLC",
+    "license": "ISC",
+    "dependencies": {
+        "immutable": "^3.8.2"
+    },
+    "devDependencies": {
+        "chai-immutable": "^1.6.0",
+        "@types/chai": "^4.1.2",
+        "@types/mocha": "^2.2.48",
+        "chai": "^4.1.2",
+        "prettier": "^1.11.1",
+        "typescript": "^2.7.2",
+        "mocha": "^5.0.4",
+        "ts-node": "^5.0.1"
+    },
+    "repository": "https://github.com/calculemuscode/abt-js",
+    "prettier": {
+        "printWidth": 110,
+        "tabWidth": 4
+    }
 }
