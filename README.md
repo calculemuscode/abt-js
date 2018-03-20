@@ -7,9 +7,9 @@ A Typescript library for Abstract Binding Trees
 [![Dev Dependency Status](https://david-dm.org/calculemuscode/abt-js/dev-status.svg)](https://david-dm.org/calculemuscode/abt-js?type=dev)
 [![Coverage Status](https://coveralls.io/repos/github/calculemuscode/abt-js/badge.svg?branch=master)](https://coveralls.io/github/calculemuscode/abt-js?branch=master)
 
-This ABT library is based on some course infrastructure used at Carnegie Mellon's Foundations of Programming
-Languages course and on Prof. Robert Harpers's book, Practical Foundations of Programming Languages. Compared
-to the ABT library that was historically used in CMU's course, this ABT library:
+This ABT library is based on Prof. Robert Harpers's book, Practical Foundations of Programming Languages, and
+on course infrastructure used at Carnegie Mellon's Foundations of Programming Languages course. Compared to
+the ABT library that was historically used in CMU's course, this ABT library:
 
  * Results in nicer looking output. The CMU course takes an approach to ABTs that has a failure mode: after
    you do some computation, the perfectly reasonable return-the-identity-function function that you wrote as
@@ -32,7 +32,7 @@ For an introduction to what Abstract Binding Trees are, see XXX my blogpost and 
 Interface
 =========
 
-An Abstract Binding Tree has Typescript type:
+An Abstract Binding Tree has this Typescript type:
 
 ```typescript
 type ABT = string | { tag: string, ... }`
