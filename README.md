@@ -5,6 +5,7 @@ A Typescript library for Abstract Binding Trees
 [![Build Status](https://travis-ci.org/calculemuscode/abt-js.svg?branch=master)](https://travis-ci.org/calculemuscode/abt-js)
 [![Dependency Status](https://david-dm.org/calculemuscode/abt-js.svg)](https://david-dm.org/calculemuscode/abt-js)
 [![Dev Dependency Status](https://david-dm.org/calculemuscode/abt-js/dev-status.svg)](https://david-dm.org/calculemuscode/abt-js?type=dev)
+[![Coverage Status](https://coveralls.io/repos/github/calculemuscode/abt-js/badge.svg?branch=master)](https://coveralls.io/github/calculemuscode/abt-js?branch=master)
 
 This ABT library is based on some course infrastructure used at Carnegie Mellon's Foundations of Programming
 Languages course and on Prof. Robert Harpers's book, Practical Foundations of Programming Languages. Compared
