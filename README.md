@@ -1,4 +1,4 @@
-A Javascript library for Abstract Binding Trees
+A Typescript library for Abstract Binding Trees
 ===============================================
 
 [![npm version](https://badge.fury.io/js/%40calculemus%2Fabt.svg)](https://badge.fury.io/js/%40calculemus%2Fabt)
@@ -10,28 +10,34 @@ This ABT library is based on some course infrastructure used at Carnegie Mellon'
 Languages course and on Prof. Robert Harpers's book, Practical Foundations of Programming Languages. Compared
 to the ABT library that was historically used for that course, this ABT library:
 
- * Results in nicer looking code. The CMU course takes an approach to ABTs that has the following failure
-   mode: after you do some computation, the perfectly reasonable return-the-identity-function function that
-   you wrote as `fn x => fn x => x` is now getting printed out as the well-I-suppose-technically-correct
-   jibberish `fn x125123 => fn x124512 => x124512`. This ABT library (in default configuration) will print
-   this out as the much more reasonable `fn x => fn x1 => x1`.
+ * Results in nicer looking output. The CMU course takes an approach to ABTs that has a failure mode: after
+   you do some computation, the perfectly reasonable return-the-identity-function function that you wrote as
+   `fn x => fn x => x` gets pretty-printed as the jibberish `fn x1251 => fn x1245 => x1245`. This ABT library
+   (in default configuration) will print this out as the IMO much more reasonable `fn x => fn x1 => x1`.
 
- * Harder to use. This is a direct consequence of printing nicer looking code. Most functions require an
-   immutable.Set<string> of all free-or-potentially-free variables to be given as an input, and if you get
-   this wrong the behavior of the library is undefined. (The CMU-style ABT construction assumes that any
-   variable ever created is free-or-potentially-free, which is why you end up with extremely large numbers
-   floating around.)
+ * Harder to use without screwing up. This is a direct consequence of printing nicer looking output. Most
+   functions require an `immutable.Set<string>` of all free-or-potentially-free variables as an input, and if
+   you get this wrong the behavior of the library is undefined. (The CMU-style ABT construction assumes that
+   any variable ever exposed outside the library is free-or-potentially-free, which is why you end up with
+   overly-renumbered variables floating around.)
 
  * More complicated in its implementation. Substitution and ABT equality are implemented "under the hood," and
    when students try to implement substitution and ABT equality under the hood in Foundations of Programming
-   Langauges we tell them to not do that.
+   Langauges we tell them to not do that, and for good reasons: it's hard to get it right, even if it's a bit
+   faster.
 
-For an introduction to what Abstract Binding Trees are, see XXX blogpost and XXX neel's blogpost.
+For an introduction to what Abstract Binding Trees are, see XXX my blogpost and XXX neel's blogpost.
 
 Interface
 =========
 
-An Abstract Binding Tree has Typescript type `ABT = string | { tag: string, ... }`.
+An Abstract Binding Tree has Typescript type:
+
+```typescript
+type ABT = string | { tag: string, ... }`
+```
+
+To respect this library's interface, _do not access any fields of a non-string ABT_ aside from `tag`.
 
 ``` typescript
 import { ABT, abt } from "@calculemus/abt";
@@ -46,11 +52,11 @@ function abtBoolToBool(syn: ABT): boolean {
 }
 ```
 
-To respect this library's interface, do not access any fields of a non-string ABT aside from `tag`.
-
 ABTs are built and inspected by the methods of an `AbstractBindingTree` class; the default instantiation of
 this class is provided in the library and called `abt`, which you can see imported in the example
-above. Objects of type ABT don't have any methods, they're only treated as data objects.
+above.
+
+Objects of type `ABT` don't have any methods, they're only data objects.
 
 Creating Abstract Binding Trees
 -------------------------------
