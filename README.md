@@ -8,7 +8,7 @@ A Typescript library for Abstract Binding Trees
 
 This ABT library is based on some course infrastructure used at Carnegie Mellon's Foundations of Programming
 Languages course and on Prof. Robert Harpers's book, Practical Foundations of Programming Languages. Compared
-to the ABT library that was historically used for that course, this ABT library:
+to the ABT library that was historically used in CMU's course, this ABT library:
 
  * Results in nicer looking output. The CMU course takes an approach to ABTs that has a failure mode: after
    you do some computation, the perfectly reasonable return-the-identity-function function that you wrote as
@@ -131,9 +131,8 @@ function lambdaToString(fv: Set<string>, e: ABT): string {
 }
 ```
 
-The variables output by `abt.args` will always be fresh in `fv`. This means that as you traverse an `ABT`
-adding fresh variables to the set as required, you'll never add a free variable to `fv` that was already
-there.
+The variable identifiers output by `abt.args` will always be distinct from each other and from any identifier
+in `fv`.
 
 ```javascript
 > const abt = require("@calculemus/abt").abt;
@@ -145,3 +144,8 @@ there.
 > abt.args(Set(["x", "x1", "x2"]), abt.oper("fn", [["x"], "x"]));
 [ [ [ 'x3' ], 'x3' ] ]
 ```
+
+Substitution
+------------
+
+Capture-avoiding substitution is the 

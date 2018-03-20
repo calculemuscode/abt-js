@@ -4,15 +4,101 @@ export type Bind = { bound: string[]; value: ABT };
 export type ABT = string | { tag: string; value: Bind[] };
 
 export class AbstractBindingTree {
-    private freshen: (fv: Set<string>, xold: string) => string;
+    private freshenImpl: (fv: Set<string>, xold: string) => string;
 
     public constructor(freshen: (fv: Set<string>, xold: string) => string) {
-        this.freshen = freshen;
+        this.freshenImpl = freshen;
     }
 
     private findFresh(fv: Set<string>, xold: string): string {
         if (!fv.has(xold)) return xold;
-        return this.freshen(fv, xold);
+        return this.freshenImpl(fv, xold);
+    }
+
+    /**
+     * permuteFresh(fv, sigma, syn) computes syn[sigma]
+     *
+     * ```
+     *   fv' |- syn
+     *   syn |- fv' --> fv
+     *   fv  |- syn[sigma]
+     * ```
+     */
+    private permuteFresh(fv: Set<string>, sigma: Map<string, string>, syn: ABT): ABT {
+        if (typeof syn === "string") {
+            const x = sigma.has(syn) ? sigma.get(syn) : syn;
+            if (!fv.has(x)) throw new Error(`eqAbt: variable ${x} was not among the free variables`);
+            return x;
+        } else {
+            return {
+                tag: syn.tag,
+                value: syn.value.map(({ bound, value }) => {
+                    const result = bound.reduce(
+                        (accum, xold) => {
+                            const xnew = this.findFresh(accum.fv, xold);
+                            return {
+                                fv: accum.fv.add(xnew),
+                                sigma: accum.sigma.set(xold, xnew),
+                                xs: accum.xs.push(xnew)
+                            };
+                        },
+                        { fv: fv, sigma: sigma, xs: List<string>([]) }
+                    );
+                    return {
+                        bound: result.xs.toArray(),
+                        value: this.permuteFresh(result.fv, result.sigma, value)
+                    };
+                })
+            };
+        }
+    }
+
+    /**
+     * Transforms a single Bind into its fresh form. A bit of a repetition of the more general permuteFresh()
+     * function.
+     *
+     * ```
+     *   fv |- syn
+     * ```
+     */
+    private freshenArg(fv: Set<string>, syn: Bind): [string[], ABT] {
+        const result = syn.bound.reduce(
+            (accum, xold) => {
+                const xnew = this.findFresh(accum.fv, xold);
+                return {
+                    someRenaming: accum.someRenaming || xnew !== xold,
+                    fv: accum.fv.add(xnew),
+                    sigma: accum.sigma.set(xold, xnew),
+                    xs: accum.xs.push(xnew)
+                };
+            },
+            { someRenaming: false, fv: fv, sigma: Map<string, string>(), xs: List<string>() }
+        );
+
+        // Take fast path if the variables were already fresh in the current context
+        if (!result.someRenaming) return [syn.bound, syn.value];
+        return [result.xs.toArray(), this.permuteFresh(result.fv, result.sigma, syn.value)];
+    }
+
+    /**
+     * Expose the arguments to an ABT. If you are working with a consistent signature, the structure is
+     * predictable, so you can pattern match against the arguments.
+     *
+     * ```
+     *   switch(e.tag)
+     *   case "Ap": { // Ap(e1,e2)
+     *     const [[[],e1], [[], e2]] = abt.args(fv, e);
+     *     ...
+     *   }
+     *   case "Fn": { // Lam(x.e0)
+     *     const [[[x], e0]] = abt.args(fv, e);
+     *   }
+     * ```
+     *
+     * Any bound variables will be freshened to be distinct from those in [fv].
+     */
+    public args(fv: Set<string>, abt: { value: Bind[] }): [string[], ABT][] {
+        return abt.value.map((arg: Bind): [string[], ABT] => this.freshenArg(fv, arg));
     }
 
     /**
@@ -31,6 +117,9 @@ export class AbstractBindingTree {
         }
     }
 
+    /**
+     *
+     */
     private substBind(fv: Set<string>, sigma: Map<string, ABT>, syn: Bind): Bind {
         const initReduce: [Set<string>, Map<string, ABT>, string[]] = [fv, sigma, []];
         const [fv2, sigma2, boundvars2] = syn.bound.reduce(([fv, sigma, boundvars], xold): [
@@ -45,11 +134,35 @@ export class AbstractBindingTree {
     }
 
     /**
-     * Substitute ABT(s) into the bindings b. The number of [syns] must match the number of bound variables in
-     * [bindings], and the [fv] must be a superset of all variables free in both [syns] and [bindings]. (The
-     * free variables do not need to include variables bound _in_ [bindings].)
+     * subst(fv, syn1, x, syn2)
+     *
+     * Substitute ABT(s) [syn1] for the variable(s) x into [syn2].
+     *
+     * The variable(s) [x] must be distinct from [fv]. All free variables in [syn1] must be in [fv], and all
+     * free variables in [syn2] must be in [fv] or the variable(s) [x]. Notationally:
+     *
+     * ```
+     *   fv |- syn1
+     *   fv, x |- syn2
+     * ``
+     *
+     * The result will only include free variables from [fv].
+     *
+     * If multiple xs are given, multiple syn2s must also be given, and their numbers must match.
      */
-    public subst(fv: Set<string>, syns: ABT[], bindings: Bind): ABT {
+    public subst(fv: Set<string>, syn1: ABT, x: string, syn2: ABT): ABT;
+    public subst(fv: Set<string>, syns1: ABT[], xs: string[], syn2: ABT): ABT;
+    public subst(fv: Set<string>, syns1: ABT | ABT[], xs: string | string[], syn2: ABT): ABT {
+        if (syns1 instanceof Array && xs instanceof Array) {
+            throw new Error("Unimplemented");
+        } else if (syns1 instanceof Array || xs instanceof Array) {
+            throw new Error("subst: first argument and second argument must both be arrays if either is");
+        } else {
+            return this.subst(fv, [syns1], [xs], syn2);
+        }
+    }
+    /*
+
         const initReduce: [Set<string>, Map<string, ABT>, List<string>] = [
             fv,
             Map<string, ABT>(),
@@ -67,7 +180,7 @@ export class AbstractBindingTree {
 
         if (b.size !== 0) throw new Error("subst: too many bindings");
         return this.substSyn(fv2, sigma, bindings.value);
-    }
+*/
 
     /**
      * Let e1 and e2 be two ABTs:
@@ -112,36 +225,23 @@ export class AbstractBindingTree {
         };
     }
 
-    // Transforms a single Bind into its public form
-    private freshenArg(fv: Set<string>, abt: Bind): [string[], ABT] {
-        const initReduce: [Set<string>, List<string>, boolean] = [fv, List([]), false];
-        const res = abt.bound.reduce((accum: [Set<string>, List<string>, boolean], xold: string): [
-            Set<string>,
-            List<string>,
-            boolean
-        ] => {
-            const [fv, freshbound, isnew] = accum;
-            const x = this.findFresh(fv, xold);
-            return [fv.add(x), freshbound.push(x), isnew || x !== xold];
-        }, initReduce);
-
-        // TODO: implement fast path if !res[2]
-        const newvars = res[1].toArray();
-        return [newvars, this.subst(fv, newvars, abt)];
-    }
-
+    /**
+     * Get the arity of a function. One list member per subterm, and the numbers count the bindings, so
+     * `letrec(anno, tau, x.f.e, f.g)` has arity [0,0,2,1].
+     */
     private arity(syn: { value: Bind[] }): List<number> {
         return List(syn.value.map((bind: Bind) => bind.bound.length));
     }
 
     /**
      * The CMU ABT approach is to substitute in new variables for both fv1 and fv2. In attempting to do
-     * something more symmetric and avoid calling this.subst or this.args directly... I began to understand
-     * why CMU does things that way. We need a ton of arguments, but they all have pretty detailed
-     * relationships:
+     * something more symmetric, and also avoid calling this.subst or this.args directly... I began to
+     * understand why CMU implements substitution outside the ABT interface. We need a ton of arguments, but
+     * they all have pretty simple relationships.
      *
-     * We start off with fv1 = fv2 = fv, but as we descend under binders in parallel, we learn about more free
-     * variables of syn1, which go in fv1, and more variables of syn2, which go in fv2.
+     * We're actually checking fv |- syn1[sigma1] = syn2[sigma2]. We start off with fv1 = fv2 = fv, but as we
+     * descend under binders in parallel, we learn about more free variables of syn1, which go in fv1, and
+     * more variables of syn2, which go in fv2.
      *
      * fv1 |- syn1
      * fv2 |- syn2
@@ -157,10 +257,8 @@ export class AbstractBindingTree {
      */
     private eqAbt(
         fv: Set<string>,
-        fv1: Set<string>,
         sigma1: Map<string, string>,
         syn1: ABT,
-        fv2: Set<string>,
         sigma2: Map<string, string>,
         syn2: ABT
     ): boolean {
@@ -181,23 +279,13 @@ export class AbstractBindingTree {
                         const newx = this.findFresh(accum.fv, "x");
                         return {
                             fv: accum.fv.add(newx),
-                            fv1: accum.fv1.add(x1),
                             sigma1: accum.sigma1.set(x1, newx),
-                            fv2: accum.fv2.add(x2),
                             sigma2: accum.sigma2.set(x2, newx)
                         };
                     },
-                    { fv: fv, fv1: fv1, sigma1: sigma1, fv2: fv2, sigma2: sigma2 }
+                    { fv: fv, sigma1: sigma1, sigma2: sigma2 }
                 );
-                return this.eqAbt(
-                    result.fv,
-                    result.fv1,
-                    result.sigma1,
-                    bind1.value,
-                    result.fv2,
-                    result.sigma2,
-                    bind2.value
-                );
+                return this.eqAbt(result.fv, result.sigma1, bind1.value, result.sigma2, bind2.value);
             });
         } else {
             return false;
@@ -209,30 +297,12 @@ export class AbstractBindingTree {
      * be contained in the set [fv].
      */
     public equal(fv: Set<string>, syn1: ABT, syn2: ABT): boolean {
-        return this.eqAbt(fv, fv, Map<string, string>(), syn1, fv, Map<string, string>(), syn2);
+        return this.eqAbt(fv, Map<string, string>(), syn1, Map<string, string>(), syn2);
     }
 
     /**
-     * Exposes the arguments to an ABT. If you are working with a consistent signature, the structure
-     * is predictable, so you can pattern match against the arguments.
-     *
-     * ```
-     *   switch(e.tag)
-     *   case "Ap": { // Ap(e1,e2)
-     *     const [[[],e1], [[], e2]] = abt.args(fv, e);
-     *     ...
-     *   }
-     *   case "Fn": { // Lam(x.e0)
-     *     const [[[x], e0]] = abt.args(fv, e);
-     *   }
-     * ```
-     *
-     * Any bound variables will be freshened to be distinct from those in [fv].
+     * Prints out [abt], freshening relative to the free variables [fv].
      */
-    public args(fv: Set<string>, abt: { value: Bind[] }): [string[], ABT][] {
-        return abt.value.map((arg: Bind): [string[], ABT] => this.freshenArg(fv, arg));
-    }
-
     public toString(fv: Set<string>, abt: ABT): string {
         if (typeof abt === "string") return abt;
         const args = this.args(fv, abt);
@@ -247,6 +317,9 @@ export class AbstractBindingTree {
         return bind.bound.reduce((fv: Set<string>, x: string) => fv.delete(x), this.freevars(bind.value));
     }
 
+    /**
+     * Calculates the exact set of free variables of a given [abt].
+     */
     public freevars(abt: ABT): Set<string> {
         if (typeof abt === "string") return Set([abt]);
         return abt.value.reduce((fv: Set<string>, bind: Bind) => fv.union(this.freevarsBind(bind)), Set());
