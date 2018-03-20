@@ -10,6 +10,7 @@ use(chaiImmutable);
 
 // zero()
 const zero = abt.oper("zero");
+const two = abt.oper("succ", abt.oper("succ", abt.oper("zero")));
 
 // succ(succ(succ(succ(zero()))))
 const four = abt.oper("succ", abt.oper("succ", abt.oper("succ", abt.oper("succ", zero))));
@@ -30,6 +31,9 @@ const tree2 = abt.oper("node", "x", abt.oper("leaf"));
 // node(leaf(),y)
 const tree3 = abt.oper("node", abt.oper("leaf"), "y");
 
+// node(leaf(),node(x,leaf()))
+const tree4 = abt.oper("node", abt.oper("leaf"), tree2);
+
 // lam(x.x)
 const id1 = abt.oper("lam", [["x"], "x"]);
 
@@ -41,6 +45,9 @@ const id3 = abt.oper("lam", [["z"], "z"]);
 
 // lam(lam.lam)
 const id4 = abt.oper("lam", [["lam"], "lam"]);
+
+// lam(x2.x2)
+const id5 = abt.oper("lam", [["x2"], "x2"]);
 
 // lam(x.y)
 const take = abt.oper("lam", [["x"], abt.oper("ap", "x", "y")]);
@@ -213,6 +220,7 @@ describe("abt.toString", () => {
             "lam(a1.lam(b1.lam(c1.ap(ap(a1,c1),ap(b1,c1)))))"
         );
         expect(abt.toString(Set(["x", "y", "b"]), s2)).to.equal("lam(a.lam(b1.lam(c.ap(ap(a,c),ap(b1,c)))))");
+        expect(abt.toString(Set(["x1", "x2", "x4"]), id5)).to.equal("lam(x3.x3)");
     });
 
     it("Should rename bound variables that appear in the scope of the same bound variable", () => {
@@ -220,5 +228,34 @@ describe("abt.toString", () => {
         expect(abt.toString(Set(["x"]), ign1)).to.equal("lam(x1.lam(x2.x2))");
         expect(abt.toString(Set([]), ign2)).to.equal("lam(lam.lam(lam1.lam1))");
         expect(abt.toString(Set(["lam", "lam1", "lam3"]), ign2)).to.equal("lam(lam2.lam(lam4.lam4))");
+    });
+});
+
+xdescribe("abt.subst", () => {
+    it("Should be the identity when the variable isn't free", () => {
+        expect(abt.equal(Set(["y"]), abt.subst(Set([]), four, "x", four), four)).to.be.true;
+        expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), four, "y", four), four)).to.be.true;
+        expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), four, "y", four), four)).to.be.true;
+        expect(abt.equal(Set(["y"]), abt.subst(Set([]), id1, "x", four), four)).to.be.true;
+        expect(abt.equal(Set(["y"]), abt.subst(Set([]), four, "x", id1), id1)).to.be.true;
+        expect(abt.equal(Set(["y"]), abt.subst(Set(["y"]), id1, "x", tree3), tree3)).to.be.true;
+        expect(abt.equal(Set(["y"]), abt.subst(Set(["y"]), tree3, "x", id1), id1)).to.be.true;
+        expect(abt.equal(Set(["y"]), abt.subst(Set(["y"]), id2, "x", tree3), tree3)).to.be.true;
+        expect(abt.equal(Set(["y"]), abt.subst(Set(["y"]), tree3, "x", id2), id2)).to.be.true;
+    });
+
+    it("Should substitute directly for free variables correctly", () => {
+        expect(abt.subst(Set(["y"]), "x", "x")).to.be("x");
+        expect(abt.equal(Set([]), abt.subst(Set([]), four, "x", "x"), four)).to.be.true;
+        expect(abt.equal(Set(["y"]), abt.subst(Set(["y"]), four, "x", "x"), four)).to.be.true;
+        expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), id1, "y", "y"), id1)).to.be.true;
+        expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), id2, "y", "y"), id1)).to.be.true;
+        expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), id3, "y", "y"), id1)).to.be.true;
+        expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), id4, "y", "y"), id1)).to.be.true;
+    });
+
+    it("Should substitute for free variables in trees", () => {
+        expect(abt.equal(Set(["y"]), abt.subst(Set(["y"]), two, "x", abt.oper("succ", abt.oper("succ", "x"))), four)).to.be.true;
+        expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), tree2, "y", tree3), tree4)).to.be.true;
     });
 });

@@ -136,7 +136,8 @@ export class AbstractBindingTree {
     /**
      * subst(fv, syn1, x, syn2)
      *
-     * Substitute ABT(s) [syn1] for the variable(s) x into [syn2].
+     * Substitute ABT(s) [syn1] for the variable(s) x into [syn2]. We must have both [syn1] and [x] as single
+     * variables or both as arrays of the same length.
      *
      * The variable(s) [x] must be distinct from [fv]. All free variables in [syn1] must be in [fv], and all
      * free variables in [syn2] must be in [fv] or the variable(s) [x]. Notationally:
@@ -150,8 +151,6 @@ export class AbstractBindingTree {
      *
      * If multiple xs are given, multiple syn2s must also be given, and their numbers must match.
      */
-    public subst(fv: Set<string>, syn1: ABT, x: string, syn2: ABT): ABT;
-    public subst(fv: Set<string>, syns1: ABT[], xs: string[], syn2: ABT): ABT;
     public subst(fv: Set<string>, syns1: ABT | ABT[], xs: string | string[], syn2: ABT): ABT {
         if (syns1 instanceof Array && xs instanceof Array) {
             throw new Error("Unimplemented");
