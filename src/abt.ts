@@ -131,10 +131,24 @@ export class AbstractBindingTree {
     }
 
     private arity(syn: { value: Bind[] }): List<number> {
-        return List(syn.value.map((bind: Bind) => bind.bound.len));
+        return List(syn.value.map((bind: Bind) => bind.bound.length));
     }
 
-    private eqAbt(fv: Set<string>, sigma1: Map<string, string>, syn1: ABT, sigma2: Map<string, string>, syn2: ABT): boolean {
+    /**
+     * fv1 |- syn1
+     * fv2 |- syn2
+     * sigma1 : fv1 --> fv
+     * sigma2 : fv2 --> fv
+     */
+    private eqAbt(
+        fv: Set<string>,
+        fv1: Set<string>,
+        sigma1: Map<string, string>,
+        syn1: ABT,
+        fv2: Set<string>,
+        sigma2: Map<string, string>,
+        syn2: ABT
+    ): boolean {
         if (typeof syn1 === "string" && typeof syn2 === "string") {
             const x1 = sigma1.has(syn1) ? sigma1.get(syn1) : syn1;
             const x2 = sigma2.has(syn2) ? sigma2.get(syn2) : syn2;
@@ -142,16 +156,43 @@ export class AbstractBindingTree {
             if (!fv.has(x2)) throw new Error(`eqAbt: variable ${x2} was not among the free variables`);
             return x1 === x2;
         } else if (typeof syn1 !== "string" && typeof syn2 !== "string") {
-            if (syn1.cat !== syn2.cat) return false;
+            if (syn1.tag !== syn2.tag) return false;
             if (!this.arity(syn1).equals(this.arity(syn2))) return false;
-            return true; // XXX todo
+            const args1 = this.args(fv1, syn1);
+            const args2 = this.args(fv2, syn2);
+            return args1.every(([xs1, subsyn1], index) => {
+                const [xs2, subsyn2] = args2[index];
+                const result = xs1.reduce(
+                    (accum, x1, index) => {
+                        const x2 = xs2[index];
+                        const newx = this.findFresh(accum.fv, "x");
+                        return {
+                            fv: accum.fv.add(newx),
+                            fv1: accum.fv1.add(x1),
+                            sigma1: accum.sigma1.set(x1, newx),
+                            fv2: accum.fv2.add(x2),
+                            sigma2: accum.sigma2.set(x2, newx)
+                        };
+                    },
+                    { fv: fv, fv1: fv1, sigma1: sigma1, fv2: fv2, sigma2: sigma2 }
+                );
+                return this.eqAbt(
+                    result.fv,
+                    result.fv1,
+                    result.sigma1,
+                    subsyn1,
+                    result.fv2,
+                    result.sigma2,
+                    subsyn2
+                );
+            });
         } else {
             return false;
         }
     }
 
     public equal(fv: Set<string>, syn1: ABT, syn2: ABT): boolean {
-        return this.eqAbt(fv, Map<string, string>(), syn1, Map<string, string>(), syn2);
+        return this.eqAbt(fv, fv, Map<string, string>(), syn1, fv, Map<string, string>(), syn2);
     }
 
     /**

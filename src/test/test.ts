@@ -98,6 +98,11 @@ describe("abt.equal", () => {
         expect(abt.equal(Set(["zero"]), four, "zero")).to.be.false;
     });
 
+    it("Should differentiate constructors of the same arity", () => {
+        expect(abt.equal(Set([]), zero, abt.oper("z"))).to.be.false;
+        expect(abt.equal(Set([]), id1, abt.oper("fn", [["x"], "x"]))).to.be.false;
+    });
+
     it("Should differentiate constructors of different arities", () => {
         expect(abt.equal(Set([]), four, exoticfour), "1").to.be.false;
         expect(abt.equal(Set([]), five, exoticfive1), "2").to.be.false;
@@ -112,6 +117,13 @@ describe("abt.equal", () => {
         expect(abt.equal(Set([]), exoticfive3, exoticfive1), "B").to.be.false;
         expect(abt.equal(Set([]), exoticfive3, exoticfive2), "C").to.be.false;
         expect(abt.equal(Set([]), exoticfive3, exoticfive3), "D").to.be.true;
+        expect(
+            abt.equal(
+                Set([]),
+                abt.oper("succ", [["x"], abt.oper("zero")]),
+                abt.oper("succ", abt.oper("zero"))
+            )
+        ).to.be.false;
     });
 
     it("Should respect alpha-equivalence", () => {

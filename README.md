@@ -7,5 +7,21 @@ A Javascript library for Abstract Binding Trees
 [![Dev Dependency Status](https://david-dm.org/calculemuscode/abt-js/dev-status.svg)](https://david-dm.org/calculemuscode/abt-js?type=dev)
 
 This ABT library is based on some course infrastructure used at Carnegie Mellon's Foundations of Programming
-Languages course and on Prof. Robert Harpers's book, Principles of Programming Languages.
+Languages course and on Prof. Robert Harpers's book, Practical Foundations of Programming Languages. Compared
+to the ABT library that was historically used for that course, this ABT library:
+
+ * Results in nicer looking code. The CMU course takes an approach to ABTs has a failure mode where the
+   perfectly reasonable return-the-identity-function function that you wrote as (fn x => fn x => x) gets
+   printed out as the only-technically-correct (fn x125123 => fn x124512 => x124512). Our library will print
+   this out as something like (fn x => fn x1 => x1).
+
+ * Harder to use. This is a direct consequence of printing nicer looking code. Most functions require an
+   immutable.Set<string> of all free-or-potentially-free variables to be given as an input, and if you get
+   this wrong the behavior of the library is undefined. (The CMU-style ABT construction assumes that any
+   variable ever created is free-or-potentially-free, which is why you end up with extremely large numbers
+   floating around.)
+
+ * More complicated in its implementation. Substitution and ABT equality are implemented "under the hood," and
+   when students try to implement substitution and ABT equality under the hood in Foundations of Programming
+   Langauges we tell them to not do that.
 
