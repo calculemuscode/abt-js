@@ -148,4 +148,8 @@ in `fv`.
 Substitution
 ------------
 
-Capture-avoiding substitution is the 
+Capture-avoiding substitution is the key feature of an abstract binding tree library.
+
+```
+abt.subst(fv: Set<string>, syn: ABT): [string[], ABT][]
+```
