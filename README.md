@@ -10,10 +10,11 @@ This ABT library is based on some course infrastructure used at Carnegie Mellon'
 Languages course and on Prof. Robert Harpers's book, Practical Foundations of Programming Languages. Compared
 to the ABT library that was historically used for that course, this ABT library:
 
- * Results in nicer looking code. The CMU course takes an approach to ABTs has a failure mode where the
-   perfectly reasonable return-the-identity-function function that you wrote as (fn x => fn x => x) gets
-   printed out as the only-technically-correct (fn x125123 => fn x124512 => x124512). Our library will print
-   this out as something like (fn x => fn x1 => x1).
+ * Results in nicer looking code. The CMU course takes an approach to ABTs that has the following failure
+   mode: after you do some computation, the perfectly reasonable return-the-identity-function function that
+   you wrote as `fn x => fn x => x` is now getting printed out as the well-I-suppose-technically-correct
+   jibberish `fn x125123 => fn x124512 => x124512`. This ABT library (in default configuration) will print
+   this out as the much more reasonable `fn x => fn x1 => x1`.
 
  * Harder to use. This is a direct consequence of printing nicer looking code. Most functions require an
    immutable.Set<string> of all free-or-potentially-free variables to be given as an input, and if you get
