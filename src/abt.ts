@@ -135,10 +135,25 @@ export class AbstractBindingTree {
     }
 
     /**
+     * The CMU ABT approach is to substitute in new variables for both fv1 and fv2. In attempting to do
+     * something more symmetric and avoid calling this.subst or this.args directly... I began to understand
+     * why CMU does things that way. We need a ton of arguments, but they all have pretty detailed
+     * relationships:
+     *
+     * We start off with fv1 = fv2 = fv, but as we descend under binders in parallel, we learn about more free
+     * variables of syn1, which go in fv1, and more variables of syn2, which go in fv2.
+     *
      * fv1 |- syn1
      * fv2 |- syn2
-     * sigma1 : fv1 --> fv
-     * sigma2 : fv2 --> fv
+     *
+     * The simultaneous substitutions sigma1 and sigma2 map the new free variables back to a single shared
+     * context.
+     *
+     * sigma1 : fv1 --> fv   (meaning that fv |- syn1[sigma])
+     * sigma2 : fv2 --> fv   (meaning that fv |- syn2[sigma])
+     *
+     * fv1 and fv2 may be smaller than fv if syn1 or syn2 (respectively) contain shadowed variables in their
+     * internal representation.
      */
     private eqAbt(
         fv: Set<string>,
@@ -158,13 +173,11 @@ export class AbstractBindingTree {
         } else if (typeof syn1 !== "string" && typeof syn2 !== "string") {
             if (syn1.tag !== syn2.tag) return false;
             if (!this.arity(syn1).equals(this.arity(syn2))) return false;
-            const args1 = this.args(fv1, syn1);
-            const args2 = this.args(fv2, syn2);
-            return args1.every(([xs1, subsyn1], index) => {
-                const [xs2, subsyn2] = args2[index];
-                const result = xs1.reduce(
+            return syn1.value.every((bind1, index) => {
+                const bind2 = syn2.value[index];
+                const result = bind1.bound.reduce(
                     (accum, x1, index) => {
-                        const x2 = xs2[index];
+                        const x2 = bind2.bound[index];
                         const newx = this.findFresh(accum.fv, "x");
                         return {
                             fv: accum.fv.add(newx),
@@ -180,10 +193,10 @@ export class AbstractBindingTree {
                     result.fv,
                     result.fv1,
                     result.sigma1,
-                    subsyn1,
+                    bind1.value,
                     result.fv2,
                     result.sigma2,
-                    subsyn2
+                    bind2.value
                 );
             });
         } else {
@@ -191,13 +204,17 @@ export class AbstractBindingTree {
         }
     }
 
+    /**
+     * Checks whether [syn1] and [syn2] are alpha-equivalent. All the free variables in [syn1] and [syn2] must
+     * be contained in the set [fv].
+     */
     public equal(fv: Set<string>, syn1: ABT, syn2: ABT): boolean {
         return this.eqAbt(fv, fv, Map<string, string>(), syn1, fv, Map<string, string>(), syn2);
     }
 
     /**
      * Exposes the arguments to an ABT. If you are working with a consistent signature, the structure
-     * is predictable, so you can say
+     * is predictable, so you can pattern match against the arguments.
      *
      * ```
      *   switch(e.tag)
