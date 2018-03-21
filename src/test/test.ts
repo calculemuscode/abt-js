@@ -244,12 +244,12 @@ describe("abt.subst", () => {
     });
 
     it("Should throw on bad inputs", () => {
-        expect(() => abt.subst(Set["x", "y"], ["x"], "x", "x")).to.throw;
-        expect(() => abt.subst(Set["x", "y"], ["x", "y"], "x", "x")).to.throw;
-        expect(() => abt.subst(Set["x", "y"], ["x", "y"], ["x"], "x")).to.throw;
-        expect(() => abt.subst(Set["x", "y"], "x", ["x"], "x")).to.throw;
-        expect(() => abt.subst(Set["x", "y"], "x", ["x", "y"], "x")).to.throw;
-        expect(() => abt.subst(Set["x", "y"], ["x"], ["x", "y"], "x")).to.throw;
+        expect(() => abt.subst(Set(["x", "y"]), ["x"], "x", "x")).to.throw();
+        expect(() => abt.subst(Set(["x", "y"]), ["x", "y"], "x", "x")).to.throw();
+        expect(() => abt.subst(Set(["x", "y"]), ["x", "y"], ["x"], "x")).to.throw();
+        expect(() => abt.subst(Set(["x", "y"]), "x", ["x"], "x")).to.throw();
+        expect(() => abt.subst(Set(["x", "y"]), "x", ["x", "y"], "x")).to.throw();
+        expect(() => abt.subst(Set(["x", "y"]), ["x"], ["x", "y"], "x")).to.throw();
     });
 
     it("Should substitute directly for free variables correctly", () => {
