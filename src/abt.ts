@@ -109,7 +109,7 @@ export class AbstractBindingTree {
      * ```
      *   oper("Ap", [[], e1], [[], e2])
      *   oper("Ap", e1, e2)
-     *   oper("Ap", e1, [e2])
+     *   oper("Ap", e1, [[], e2])
      * ```
      *
      * This is how you would define Letrec(f.x.e1, f.e2):
@@ -208,9 +208,27 @@ export class AbstractBindingTree {
     /**
      * ```
      *   fv' |- syn
-     *   sigma |- fv' -> fv
+     *   sigma |- fv' --> fv
      *   fv |- syn[sigma]
      * ```
+     *
+     * Notes: when initially called from `subst(fv, [s1, s2, s3], [x, y, z], syn)`, we have
+     *
+     * ```
+     *   fv' = fv, x, y, z
+     *   sigma = [ s1/x, s2/y, s3/z ] : fv, x, y, z --> fv
+     *   fv |- syn[sigma]
+     * ```
+     *
+     * If syn = lam(f.x.syn'), then the next recursive call will be:
+     *
+     * ```
+     *   fv' = fv, x, y, z
+     *   sigma = [ x'/x, s2/y, s3/z, f/f ] : fv, x, y, z, f, --> fv, x', f
+     *   fv, f, x' |- syn'[sigma]
+     * ```
+     *
+     * And the returned value will be `fv |- lam(f.x'. syn'[sigma])`.
      */
     private substAbt(fv: Set<string>, sigma: Map<string, ABT>, syn: ABT): ABT {
         if (typeof syn === "string") {
