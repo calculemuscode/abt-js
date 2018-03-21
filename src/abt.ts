@@ -206,13 +206,18 @@ export class AbstractBindingTree {
     }
 
     /**
+     * Implementing substititon inside the interface (without repreated calles to `abt.args`) is a challenge
+     * in much the same way encoding equality was a challenge. Make sure you understand `permuteFresh` and
+     * `eqAbt` before trying to work through this code. The preconditions for well-formed inputs look like
+     * this:
+     *
      * ```
      *   fv' |- syn
      *   sigma |- fv' --> fv
      *   fv |- syn[sigma]
      * ```
      *
-     * Notes: when initially called from `subst(fv, [s1, s2, s3], [x, y, z], syn)`, we have
+     * An example: when initially called from `subst(fv, [s1, s2, s3], [x, y, z], syn)`, we have
      *
      * ```
      *   fv' = fv, x, y, z
@@ -220,15 +225,16 @@ export class AbstractBindingTree {
      *   fv |- syn[sigma]
      * ```
      *
-     * If syn = lam(f.x.syn'), then the next recursive call will be:
+     * If syn = lam(f.x.syn'), then the next recursive call will be `substAbt(fv2, sigma2, syn')`
      *
      * ```
+     *   fv2 = fv, x', f
      *   fv' = fv, x, y, z
-     *   sigma = [ x'/x, s2/y, s3/z, f/f ] : fv, x, y, z, f, --> fv, x', f
-     *   fv, f, x' |- syn'[sigma]
+     *   sigma2 = [ x'/x, s2/y, s3/z, f/f ] : fv, x, y, z, f, --> fv, x', f
+     *   fv, f, x' |- syn'[sigma2]
      * ```
      *
-     * And the returned value will be `fv |- lam(f.x'. syn'[sigma])`.
+     * The returned value will be `fv |- lam(f.x'. syn'[sigma2])`.
      */
     private substAbt(fv: Set<string>, sigma: Map<string, ABT>, syn: ABT): ABT {
         if (typeof syn === "string") {
