@@ -1,5 +1,7 @@
 .*
 *~
+*.tgz
+**/test/
 tsconfig.json
 node_modules/
 src/

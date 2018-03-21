@@ -1,12 +1,12 @@
 {
     "name": "@calculemus/abt",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "Abstract Binding Trees",
     "main": "lib/index.js",
     "scripts": {
         "watch": "tsc -w",
         "prettier": "prettier --write src/*.ts src/**/*.ts *.json",
-        "prepublishOnly": "tsc",
+        "prepublishOnly": "rm -f *~ && tsc",
         "test": "nyc mocha -r ts-node/register src/**/test/*.ts",
         "coveralls": "nyc report --reporter=text-lcov | coveralls"
     },
