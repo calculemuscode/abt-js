@@ -6,6 +6,10 @@ export type ABT = string | { tag: string; value: Bind[] };
 export class AbstractBindingTree {
     private freshenImpl: (fv: Set<string>, xold: string) => string;
 
+    /**
+     * The freshen argument will only be called when `xold` is _already in_ the set `fv`, and must return a
+     * new variable identifier that is not in `fv`.
+     */
     public constructor(freshen: (fv: Set<string>, xold: string) => string) {
         this.freshenImpl = freshen;
     }
