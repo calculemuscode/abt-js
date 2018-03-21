@@ -231,10 +231,9 @@ describe("abt.toString", () => {
     });
 });
 
-xdescribe("abt.subst", () => {
+describe("abt.subst", () => {
     it("Should be the identity when the variable isn't free", () => {
         expect(abt.equal(Set(["y"]), abt.subst(Set([]), four, "x", four), four)).to.be.true;
-        expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), four, "y", four), four)).to.be.true;
         expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), four, "y", four), four)).to.be.true;
         expect(abt.equal(Set(["y"]), abt.subst(Set([]), id1, "x", four), four)).to.be.true;
         expect(abt.equal(Set(["y"]), abt.subst(Set([]), four, "x", id1), id1)).to.be.true;
@@ -245,13 +244,16 @@ xdescribe("abt.subst", () => {
     });
 
     it("Should substitute directly for free variables correctly", () => {
-        expect(abt.subst(Set(["y"]), "x", "x")).to.be("x");
-        expect(abt.equal(Set([]), abt.subst(Set([]), four, "x", "x"), four)).to.be.true;
-        expect(abt.equal(Set(["y"]), abt.subst(Set(["y"]), four, "x", "x"), four)).to.be.true;
-        expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), id1, "y", "y"), id1)).to.be.true;
-        expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), id2, "y", "y"), id1)).to.be.true;
-        expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), id3, "y", "y"), id1)).to.be.true;
-        expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), id4, "y", "y"), id1)).to.be.true;
+        expect(abt.subst(Set(["x"]), "x", "x", "x"), "1").to.equal("x");
+        expect(abt.subst(Set(["y"]), "y", "x", "x"), "2").to.equal("y");
+        expect(abt.subst(Set(["y"]), "y", "x", "y"), "3").to.equal("y");
+        console.log(abt.subst(Set([]), four, "x", "x"));
+        expect(abt.equal(Set([]), abt.subst(Set([]), four, "x", "x"), four), "4").to.be.true;
+        expect(abt.equal(Set(["y"]), abt.subst(Set(["y"]), four, "x", "x"), four), "5").to.be.true;
+        expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), id1, "y", "y"), id1), "6").to.be.true;
+        expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), id2, "y", "y"), id1), "7").to.be.true;
+        expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), id3, "y", "y"), id1), "8").to.be.true;
+        expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), id4, "y", "y"), id1), "9").to.be.true;
     });
 
     it("Should substitute for free variables in trees", () => {

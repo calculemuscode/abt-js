@@ -102,87 +102,7 @@ export class AbstractBindingTree {
     }
 
     /**
-     * Performs the simultaneous substitution sigma on the ABT syn.
-     */
-    private substSyn(fv: Set<string>, sigma: Map<string, ABT>, syn: ABT): ABT {
-        if (typeof syn === "string") {
-            if (sigma.has(syn)) return sigma.get(syn);
-            if (!fv.has(syn)) throw new Error(`substSyn: '${syn}' not among the free variables`);
-            return syn;
-        } else {
-            return {
-                tag: syn.tag,
-                value: syn.value.map(bind => this.substBind(fv, sigma, bind))
-            };
-        }
-    }
-
-    /**
-     *
-     */
-    private substBind(fv: Set<string>, sigma: Map<string, ABT>, syn: Bind): Bind {
-        const initReduce: [Set<string>, Map<string, ABT>, string[]] = [fv, sigma, []];
-        const [fv2, sigma2, boundvars2] = syn.bound.reduce(([fv, sigma, boundvars], xold): [
-            Set<string>,
-            Map<string, ABT>,
-            string[]
-        ] => {
-            const xfresh = this.findFresh(fv, xold);
-            return [fv.add(xfresh), sigma.set(xold, xfresh), boundvars.concat([xfresh])];
-        }, initReduce);
-        return { bound: boundvars2, value: this.substSyn(fv2, sigma2, syn.value) };
-    }
-
-    /**
-     * subst(fv, syn1, x, syn2)
-     *
-     * Substitute ABT(s) [syn1] for the variable(s) x into [syn2]. We must have both [syn1] and [x] as single
-     * variables or both as arrays of the same length.
-     *
-     * The variable(s) [x] must be distinct from [fv]. All free variables in [syn1] must be in [fv], and all
-     * free variables in [syn2] must be in [fv] or the variable(s) [x]. Notationally:
-     *
-     * ```
-     *   fv |- syn1
-     *   fv, x |- syn2
-     * ``
-     *
-     * The result will only include free variables from [fv].
-     *
-     * If multiple xs are given, multiple syn2s must also be given, and their numbers must match.
-     */
-    public subst(fv: Set<string>, syns1: ABT | ABT[], xs: string | string[], syn2: ABT): ABT {
-        if (syns1 instanceof Array && xs instanceof Array) {
-            throw new Error("Unimplemented");
-        } else if (syns1 instanceof Array || xs instanceof Array) {
-            throw new Error("subst: first argument and second argument must both be arrays if either is");
-        } else {
-            return this.subst(fv, [syns1], [xs], syn2);
-        }
-    }
-    /*
-
-        const initReduce: [Set<string>, Map<string, ABT>, List<string>] = [
-            fv,
-            Map<string, ABT>(),
-            List(bindings.bound)
-        ];
-        const [fv2, sigma, b] = syns.reduce(([fv, sigma, b], syn): [
-            Set<string>,
-            Map<string, ABT>,
-            List<string>
-        ] => {
-            if (b.size == 0) throw new Error("subst: not enough bindings");
-            const x: string = this.findFresh(fv, b.get(0));
-            return [fv.add(x), sigma.set(b.get(0), syn), b.shift()];
-        }, initReduce);
-
-        if (b.size !== 0) throw new Error("subst: too many bindings");
-        return this.substSyn(fv2, sigma, bindings.value);
-*/
-
-    /**
-     * Let e1 and e2 be two ABTs:
+     * Let e1 and e2 be two ABTs.
      *
      * These three are equivalent:
      *
@@ -192,16 +112,10 @@ export class AbstractBindingTree {
      *   oper("Ap", e1, [e2])
      * ```
      *
-     * This is permissible way of defining Letrec(f.x.e1, f.e2):
+     * This is how you would define Letrec(f.x.e1, f.e2):
      *
      * ```
      *   oper("Letrec", [["f", "x"], e1], [["f"], e2])
-     * ```
-     *
-     * This is allowed by the type system but will generate a runtime error:
-     *
-     * ```
-     *   oper("Bad", [e1, e2])
      * ```
      */
     public oper(tag: string, ...args: (ABT | [string[], ABT])[]): ABT {
@@ -297,6 +211,74 @@ export class AbstractBindingTree {
      */
     public equal(fv: Set<string>, syn1: ABT, syn2: ABT): boolean {
         return this.eqAbt(fv, Map<string, string>(), syn1, Map<string, string>(), syn2);
+    }
+
+    /**
+     * ```
+     *   fv' |- syn
+     *   sigma |- fv' -> fv
+     *   fv |- syn[sigma]
+     * ```
+     */
+    private substAbt(fv: Set<string>, sigma: Map<string, ABT>, syn: ABT): ABT {
+        if (typeof syn === "string") {
+            if (sigma.has(syn)) return sigma.get(syn);
+            if (!fv.has(syn)) throw new Error(`substSyn: '${syn}' not among the free variables`);
+            return syn;
+        } else {
+            return {
+                tag: syn.tag,
+                value: syn.value.map(bind => this.substBind(fv, sigma, bind))
+            };
+        }
+    }
+
+    /**
+     * ```
+     *   fv' |- syn
+     *   sigma |- fv' -> fv
+     *   fv |- syn[sigma]
+     * ```
+     */
+    private substBind(fv: Set<string>, sigma: Map<string, ABT>, syn: Bind): Bind {
+        const result = syn.bound.reduce((accum, xold) => {
+            const xnew = this.findFresh(accum.fv, xold);
+            return {
+                fv: accum.fv.add(xnew),
+                sigma: accum.sigma.set(xold, xnew),
+                bound: accum.bound.push(xnew)
+            };
+        }, { fv: fv, sigma: sigma, bound: List<string>([]) });
+        return { bound: result.bound.toArray(), value: this.substAbt(result.fv, result.sigma, syn.value) };
+    }
+
+
+    /**
+     * subst(fv, syn1, x, syn2)
+     *
+     * Substitute ABT(s) [syn1] for the variable(s) x into [syn2]. We must have both [syn1] and [x] as single
+     * variables or both as arrays of the same length.
+     *
+     * All free variables in [syn1] must be in [fv], and all free variables in [syn2] must be in [fv] or the
+     * variable(s) [x]. Notationally:
+     *
+     * ```
+     *   fv |- syn1
+     *   fv, x |- syn2
+     * ``
+     *
+     * The result will only include free variables from [fv].
+     */
+    public subst(fv: Set<string>, syns1: ABT | ABT[], xs: string | string[], syn2: ABT): ABT {
+        if (syns1 instanceof Array && xs instanceof Array) {
+            if (syns1.length !== xs.length) throw new Error("subst: syns1 and xs not equal");
+            const sigma = syns1.reduce((sigma, syn, index) => sigma.set(xs[index], syn), Map<string, ABT>());
+            return this.substAbt(fv, sigma, syn2);
+        } else if (syns1 instanceof Array || xs instanceof Array) {
+            throw new Error("subst: first argument and second argument must both be arrays if either is");
+        } else {
+            return this.subst(fv, [syns1], [xs], syn2);
+        }
     }
 
     /**
