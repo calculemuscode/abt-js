@@ -27,7 +27,13 @@ the ABT library that was historically used in CMU's course, this ABT library:
    Langauges we tell them to not do that, and for good reasons: it's hard to get it right, even if it's a bit
    faster.
 
-For an introduction to what Abstract Binding Trees are, see XXX my blogpost and XXX neel's blogpost.
+For an introduction to what Abstract Binding Trees are, see (XXX a blogpost I have yet to write), or [Chapter
+1 in PFPL](http://www.cs.cmu.edu/~rwh/pfpl.html) for a mathematically rigorous introduction. For an
+introduction to implementing and programming with ABTs in a functional programming langauge, see [this
+post](http://semantic-domain.blogspot.com/2015/03/abstract-binding-trees.html) and [this
+followup](http://semantic-domain.blogspot.com/2015/03/abstract-binding-trees-addendum.html) by Neel
+Krishnaswami. In particular, I would point anyone interested in _implementing_ abstract binding trees to
+Neel's code over my own.
 
 Interface
 =========
@@ -74,11 +80,11 @@ _can_ just be abstract binding trees:
 ``` typescript
 import { ABT, abt } from "@calculemus/abt";
 
-const three: ABT = abt.oper("succ", abt.oper("succ", abt.oper("zero")));
+const twp: ABT = abt.oper("succ", abt.oper("succ", abt.oper("zero")));
 const bintree: ABT = abt.oper("node", abt.oper("leaf"), abt.oper("leaf"));
 ```
 
-This style doesn't give us any way to bind variables, though. It's just a shorthand for the full syntax, where
+This style doesn't give us any way to bind variables, though. It's a shorthand for the full syntax, where
 every sub-ABT is a tuple `[xs, subsyn]`, where `xs` is the (possibly empty) list of bound variables and
 `subsyn` is the ABT sub-expression.
 
@@ -95,7 +101,7 @@ const loop: ABT = abt.oper(
     [["f"], abt.oper("ap", "f", "y")]);
 
 // succ(succ(zero)), same as before
-const three: ABT = abt.oper("succ", [[], abt.oper("succ", [[], abt.oper("zero")])]);
+const two: ABT = abt.oper("succ", [[], abt.oper("succ", [[], abt.oper("zero")])]);
 ```
 
 Traversing Abstract Binding Trees
@@ -146,11 +152,63 @@ in `fv`.
 [ [ [ 'x3' ], 'x3' ] ]
 ```
 
+Alpha-equality
+--------------
+
+Abstract binding trees should be treated as equal if only the names of bound variables differ. The `abt.equal`
+function needs to be given the current free variable context, but will then compute alpha-equality.
+
+```typescript
+function abt.equal(fv: Set<string>, syn1: ABT, syn2: ABT): boolean
+```
+
+```javascript
+> abt.equal(Set(["x"]), abt.oper("lam", [["y"], "y"]), abt.oper("lam", [["z"], "z"]));
+true
+> abt.equal(Set(["x"]), abt.oper("lam", [["y"], "y"]), abt.oper("lam", [["x"], "x"]));
+true
+> abt.equal(Set(["x"]), abt.oper("lam", [["y"], "y"]), abt.oper("lam", [["z"], "x"]));
+false
+```
+
 Substitution
 ------------
 
-Capture-avoiding substitution is the key feature of an abstract binding tree library.
+Capture-avoiding substitution is the key feature of an abstract binding tree library. You can compute
+`[syn1/x]syn2` is by using the `abt.subst` function:
 
 ```
-abt.subst(fv: Set<string>, syn: ABT): [string[], ABT][]
+abt.subst(fv: Set<string>, syn1: ABT, x: string, syn2: ABT): ABT
 ```
+
+In this example, `fv` must contain all the free variables in `syn1`, and `fv.add(x)` must contain all the free
+variables in `syn2`.
+
+ABT substitution avoids variable capture: the classic problem is that if you substitute `[x / y] lam(x.ap(x,y))`,
+you want to get something alpha-equivalent to `lam(z.ap(z,x))`. Just textually replacing `y` with `x` would
+give you `lam(x.ap(x,x))`, which is the wrong answer: the free variable `x` has been captured by the binder.
+To avoid variable capture, the ABT library renames the bound variable _x_ to avoid capture.
+
+```javascript
+> const abt = require("./lib").abt;
+> const Set = require("immutable").Set;
+> const ex = abt.oper("lam", [["x"], abt.oper("ap", "x", "y")]);
+> abt.toString(Set(["x"]), "x", "y", ex);
+'x'
+> abt.toString(Set(["x"]), abt.subst(Set(["x"]), "x", "y", ex));
+'lam(x1.ap(x1,x))'
+```
+
+It's possible (though usually unnecessary) to do simultaneous substitution `[synA synB synC / x y z] syn2` as
+well. This can be done by calling:
+
+```typescript
+abt.subst(fv, [synA, synB, synC], ["x", "y", "z"], syn2)
+```
+
+The lengths of the two arrays must be equal, and `synA`, `synB`, and `synC` must all be well formed in the
+context `fv`.
+
+There are some examples of how substitution is intended to behave (which I intend to turn into actual test cases
+at some point) at [src/test/subst.abt](https://github.com/calculemuscode/abt-js/blob/master/src/test/subst.abt).
+
