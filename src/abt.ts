@@ -121,21 +121,13 @@ export class AbstractBindingTree {
     public oper(tag: string, ...args: (ABT | [string[], ABT])[]): ABT {
         const value: Bind[] = args.map((arg: ABT | [string[], ABT]) => {
             if (arg instanceof Array) {
-                const value: ABT = arg[1];
-                const bound: string[] = arg[0].map((x: ABT) => {
-                    if (typeof x === "string") return x;
-                    throw new Error(`Oper ${tag}, non-string ABT in a bound-variable position`);
-                });
-                return { bound: bound, value: value };
+                return { bound: arg[0], value: arg[1] };
             } else {
                 return { bound: [], value: arg };
             }
         });
 
-        return {
-            tag: tag,
-            value: value
-        };
+        return { tag: tag, value: value };
     }
 
     /**
@@ -241,17 +233,19 @@ export class AbstractBindingTree {
      * ```
      */
     private substBind(fv: Set<string>, sigma: Map<string, ABT>, syn: Bind): Bind {
-        const result = syn.bound.reduce((accum, xold) => {
-            const xnew = this.findFresh(accum.fv, xold);
-            return {
-                fv: accum.fv.add(xnew),
-                sigma: accum.sigma.set(xold, xnew),
-                bound: accum.bound.push(xnew)
-            };
-        }, { fv: fv, sigma: sigma, bound: List<string>([]) });
+        const result = syn.bound.reduce(
+            (accum, xold) => {
+                const xnew = this.findFresh(accum.fv, xold);
+                return {
+                    fv: accum.fv.add(xnew),
+                    sigma: accum.sigma.set(xold, xnew),
+                    bound: accum.bound.push(xnew)
+                };
+            },
+            { fv: fv, sigma: sigma, bound: List<string>([]) }
+        );
         return { bound: result.bound.toArray(), value: this.substAbt(result.fv, result.sigma, syn.value) };
     }
-
 
     /**
      * subst(fv, syn1, x, syn2)

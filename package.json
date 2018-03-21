@@ -29,10 +29,10 @@
         "typescript": "^2.7.2"
     },
     "nyc": {
-        "include": [ "src/**/*.ts" ],
-        "exclude": [ "src/**/test/*.ts" ],
-        "extension": [ ".ts" ],
-        "require": [ "ts-node/register" ],
+        "include": ["src/**/*.ts"],
+        "exclude": ["src/**/test/*.ts"],
+        "extension": [".ts"],
+        "require": ["ts-node/register"],
         "sourcemap": true,
         "instrument": true
     },

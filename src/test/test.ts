@@ -243,11 +243,19 @@ describe("abt.subst", () => {
         expect(abt.equal(Set(["y"]), abt.subst(Set(["y"]), tree3, "x", id2), id2)).to.be.true;
     });
 
+    it("Should throw on bad inputs", () => {
+        expect(() => abt.subst(Set["x", "y"], ["x"], "x", "x")).to.throw;
+        expect(() => abt.subst(Set["x", "y"], ["x", "y"], "x", "x")).to.throw;
+        expect(() => abt.subst(Set["x", "y"], ["x", "y"], ["x"], "x")).to.throw;
+        expect(() => abt.subst(Set["x", "y"], "x", ["x"], "x")).to.throw;
+        expect(() => abt.subst(Set["x", "y"], "x", ["x", "y"], "x")).to.throw;
+        expect(() => abt.subst(Set["x", "y"], ["x"], ["x", "y"], "x")).to.throw;
+    });
+
     it("Should substitute directly for free variables correctly", () => {
         expect(abt.subst(Set(["x"]), "x", "x", "x"), "1").to.equal("x");
         expect(abt.subst(Set(["y"]), "y", "x", "x"), "2").to.equal("y");
         expect(abt.subst(Set(["y"]), "y", "x", "y"), "3").to.equal("y");
-        console.log(abt.subst(Set([]), four, "x", "x"));
         expect(abt.equal(Set([]), abt.subst(Set([]), four, "x", "x"), four), "4").to.be.true;
         expect(abt.equal(Set(["y"]), abt.subst(Set(["y"]), four, "x", "x"), four), "5").to.be.true;
         expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), id1, "y", "y"), id1), "6").to.be.true;
@@ -257,7 +265,13 @@ describe("abt.subst", () => {
     });
 
     it("Should substitute for free variables in trees", () => {
-        expect(abt.equal(Set(["y"]), abt.subst(Set(["y"]), two, "x", abt.oper("succ", abt.oper("succ", "x"))), four)).to.be.true;
+        expect(
+            abt.equal(
+                Set(["y"]),
+                abt.subst(Set(["y"]), two, "x", abt.oper("succ", abt.oper("succ", "x"))),
+                four
+            )
+        ).to.be.true;
         expect(abt.equal(Set(["x"]), abt.subst(Set(["x"]), tree2, "y", tree3), tree4)).to.be.true;
     });
 });
