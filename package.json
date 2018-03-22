@@ -36,6 +36,7 @@
         "sourcemap": true,
         "instrument": true
     },
+    "types": "lib/index.d.ts",
     "repository": "https://github.com/calculemuscode/abt-js",
     "prettier": {
         "printWidth": 110,
